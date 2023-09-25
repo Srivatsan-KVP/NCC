@@ -1,0 +1,109 @@
+{% extends "../base.html" %}
+
+{% block main %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+
+    <h1 class="h1">Post Attendance</h1>
+
+    <div class="form-floating mb-3 col-md-4">
+        <input onchange="getData(this)" type="date" class="form-control" placeholder="dd-mm-yyyy">
+        <label>Date</label>
+    </div>
+
+    <input onkeyup="search(this.value.toUpperCase())" class="col-md-3 p-2" type="text" 
+        id="search" placeholder="Search">
+
+</div>
+
+{% csrf_token %}
+
+<div class="table-responsive mx-lg-5">
+    <table class="table text-center">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Batch</th>
+                <th>Attended</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {% for cadet in cadets %}
+                <tr data-uid="{{ cadet.uid.hex }}">
+                    <td>{{ cadet.name }}</td>
+                    <td>{{ cadet.batch.label }}</td>
+                    <td><input type="checkbox" disabled></td>
+                    <td>
+                        <button onclick="updateData(true, this.parentElement.parentElement)" type="button" 
+                            class="btn btn-primary">Present</button>
+                        <button onclick="updateData(false, this.parentElement.parentElement)" type="button" 
+                            class="btn btn-secondary">Absent</button>
+                    </td>
+                </tr>
+            {% endfor %}
+            
+        </tbody>
+    </table>
+</div>
+
+
+{% endblock main %}
+
+
+{% block script %}
+    <script>
+
+        const getData = (d) => {
+            if (!d.checkValidity()) return;
+
+            $.ajax({
+                type: 'GET',
+                data: { date: d.value },
+                success: (res) => {
+                    uids = new Set(JSON.parse(res.data))
+                    document.querySelectorAll('table tbody tr').forEach(row => {
+
+                        row.querySelector('input[type="checkbox"]').checked = uids.has(row.dataset.uid)
+                        let pre = row.querySelector('button.btn-primary'), abs = row.querySelector('button.btn-secondary')
+
+                        if (uids.has(row.dataset.uid)) {
+                            pre.setAttribute('disabled', '')
+                            abs.removeAttribute('disabled')
+                        } else {
+                            abs.setAttribute('disabled', '')
+                            pre.removeAttribute('disabled')
+                        }
+                    })
+                },
+                error: () => alert('Something went wrong!')
+            })
+        }
+
+        const updateData = (present, row) => {
+            AJAX({ status: present, uid: row.dataset.uid, date: document.querySelector('input[type="date"]').value }, (res) => {
+                row.querySelector('input[type="checkbox"]').checked = present
+                let pre = row.querySelector('button.btn-primary'), abs = row.querySelector('button.btn-secondary')
+
+                if (present) {
+                    pre.setAttribute('disabled', '')
+                    abs.removeAttribute('disabled')
+                } else {
+                    abs.setAttribute('disabled', '')
+                    pre.removeAttribute('disabled')
+                }
+            })
+        }
+
+        const search = (s) => {
+            document.querySelectorAll('table tbody tr').forEach(row => {
+                if (row.children[0].innerText.toUpperCase().indexOf(s) == -1)
+                    row.classList.add('d-none')
+                else
+                    row.classList.remove('d-none')
+            })
+        };
+
+    </script>
+{% endblock script %}

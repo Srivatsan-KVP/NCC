@@ -1,0 +1,177 @@
+{% extends "../base.html" %}
+
+{% block title %}Master{% endblock title %}
+
+{% block main %}
+
+<h1 class="h1">Master Record</h1>
+
+{% csrf_token %}
+
+<div class="container text-center">
+
+    <button type="button" class="btn btn-primary rounded-pill" onclick='addBatch()'>New Batch</button>
+
+    <div class="row row-cols-2 row-cols-lg-5 g-2 g-lg-3">
+
+        {% for batch in batches %}
+            <div class="col">
+                <div class="card">
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="entity" value="batch">
+                    <input type="hidden" name="uid" value="{{ batch.uid.hex }}">
+                    <div class="card-body input" name="label" contenteditable>
+                        {{ batch.label }}
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-primary" onclick="
+                            postData(this.parentElement.parentElement, (res) => location.reload())
+                        ">Save</button>
+                        <button type="button" class="btn btn-secondary" onclick="
+                            editBatch(
+                                this.parentElement.parentElement.querySelector('.input').innerText, 
+                                this.parentElement.parentElement.querySelector('input[name=\'uid\']').value
+                            )
+                        ">View List</button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+
+<div class="modal fade" id="batchModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Batch: <span></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="75%">Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                    </tbody>
+                </table>
+                
+                <button type="button" class="btn btn-secondary" onclick="
+                $('#batchModal table tbody').append(`
+                    <tr data-uid=''>
+                        <td contenteditable>Name</td>
+                        <td>
+                            <button type='button' class='btn btn-primary rounded-pill' onclick='
+                                saveCadet(this.parentElement.parentElement)
+                            '>Save</button>
+                            <button type='button' class='btn btn-danger rounded-pill' onclick='
+                                removeCadet(this.parentElement.parentElement)
+                            '>Delete</button>
+                        </td>
+                    </tr>
+                `)
+                ">Add Cadet</button>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="removeBatch()">Delete Batch</button>
+                <button type="button" class="btn btn-primary" onclick="location.reload()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock main %}
+
+{% block script %}
+    <script>
+
+        const MODAL = new bootstrap.Modal(document.getElementById('batchModal'))
+        const DATA = {
+            {% for batch, cadets in data.items %}
+                "{{ batch.uid.hex }}": [
+                    {% for cadet in cadets %}
+                        {
+                            uid: "{{ cadet.uid.hex }}",
+                            name: "{{ cadet.name }}"
+                        },
+                    {% endfor %}
+                ],
+            {% endfor %}
+        }
+        var BUID = null
+
+        const addBatch = () => {
+            $(".container .row").append(`
+                <div class="col">
+                    <div class="card">
+                        <input type="hidden" name="uid" value="">
+                        <input type="hidden" name="entity" value="batch">
+                        <div class="card-body input" name="label" contenteditable>
+                            Label
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" class="btn btn-primary" onclick="
+                                postData(this.parentElement.parentElement, (res) => location.reload())
+                            ">Save</button>
+                        </div>
+                    </div>
+                </div>
+            `)
+        };
+
+        const editBatch = (name, uid) => {
+            document.querySelector('#batchModal .modal-title span').innerText = name
+            document.querySelector('#batchModal table tbody').innerHTML = ''
+            BUID = uid
+
+            tbody = $('#batchModal table tbody')
+            tbody.innerHTML = ''
+            DATA[uid].forEach(cadet => {
+                tbody.append(`
+                    <tr data-uid="${cadet.uid}">
+                        <td contenteditable>${cadet.name}</td>
+                        <td>
+                            <button type='button' class='btn btn-primary rounded-pill' onclick='
+                                saveCadet(this.parentElement.parentElement)
+                            '>Save</button>
+                            <button type='button' class='btn btn-danger rounded-pill' onclick='
+                                removeCadet(this.parentElement.parentElement)
+                            '>Delete</button>
+                        </td>
+                    </tr>
+                `)
+            })
+
+            MODAL.show()
+        };
+
+        const removeBatch = () => {
+            AJAX({
+                uid: BUID, action: 'delete',
+                entity: 'batch'
+            }, () => location.reload())
+        }
+
+        const saveCadet = row => {
+            AJAX({
+                uid: row.dataset.uid, buid: BUID, action: 'update',
+                name: row.querySelector('td').innerText, entity: 'cadet'
+            }, (res) => { row.dataset.uid = res.uid })
+        }
+
+        const removeCadet = row => {
+            AJAX({
+                uid: row.dataset.uid, action: 'delete', entity: 'cadet'
+            }, (res) => {row.remove()})
+        };
+
+    </script>
+
+{% endblock script %}
