@@ -16,6 +16,6 @@ class Cadet(models.Model):
     batch = models.ForeignKey(to=Batch, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return self.name + ' (' + self.batch + ')'
+        return self.name + ' (' + self.batch.label + ')'
     
 

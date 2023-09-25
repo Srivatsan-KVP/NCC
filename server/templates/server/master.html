@@ -168,9 +168,12 @@
         }
 
         const removeCadet = row => {
-            AJAX({
-                uid: row.dataset.uid, action: 'delete', entity: 'cadet'
-            }, (res) => {row.remove()})
+            if (!row.dataset.uid)
+                row.remove()
+            else
+                AJAX({
+                    uid: row.dataset.uid, action: 'delete', entity: 'cadet'
+                }, (res) => {row.remove()})
         };
 
     </script>

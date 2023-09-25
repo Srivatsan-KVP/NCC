@@ -45,7 +45,7 @@ def master(req):
                 
                 batch = batch[0]
                 if req.POST['uid'] == "":
-                    cdt = models.Cadet(name=req.POST['name'], batch=batch)
+                    cdt = models.Cadet(name=req.POST['name'].strip(), batch=batch)
                     cdt.save()
                     return JsonResponse({ 'valid': True, 'uid': cdt.uid.hex })
                 
